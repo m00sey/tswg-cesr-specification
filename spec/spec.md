@@ -147,7 +147,7 @@ ISO and IEC maintain terminological databases for use in standardization at the 
 
 [[def: Variable Length]]
 
-~ a type of count code allowing for vaiable size signatures or attachments which can be parsed to get the full size
+~ a type of count code allowing for variable size signatures or attachments which can be parsed to get the full size
 
 [[def: Stream]]
 
@@ -165,9 +165,13 @@ ISO and IEC maintain terminological databases for use in standardization at the 
 
 ~ a group of 4 characters in the _T_ domain and equivalently in triplets of 3 bytes each in the _B_ domain used to define variable size.
 
-[[ref: Stable]]
+[[ref: Stable type code]]
 
-~ todo 
+~ the leading characters that determine the type do not change when any other portion of the primitive changes
+
+[[ref: Stable value encoding]]
+
+~ the trailing Base64 characters that encode the primitive value are right aligned.
 
 ::: issue
 https://github.com/trustoverip/tswg-cesr-specification/issues/12
@@ -886,8 +890,6 @@ The following table includes both labels of parts shown in the columns in the pa
 | ‘bs’ | binary size in bytes (derived) where bs = ls + rs |
 
 
-
-
 [//]: # (\backmatter)
 
 
@@ -1148,8 +1150,6 @@ This master table includes both the Primitive and Count Code types. The types ar
 |`3A######` | Ed448 indexed signature big dual      |      8      |       3      |       3      |      160     |
 |`3B######` | Ed448 indexed signature big current only |      8      |       3      |       3      |      160     |
 
-
-
 #### Examples
 
 The tables above include complex groups that maybe composed of other groups. For example, consider the counter attachment group with code `-F##` where `##` is replaced by the two-character Base64 count of the number of complex groups. This is known as the TransIndexedSigGroups counter.  Within the complex group are one or more attached
@@ -1201,7 +1201,6 @@ Although a given field map serialization kind may have characters or bytes such 
 Compliant Version 2.XX implementations shall support the old Version 1.XX Version String format to properly verify field maps created with 1.XX format events.
 
 The format of the Version String for version 1.XX is `PPPPvvKKKKllllll_`. It is 17 characters in length and is divided into five parts: protocol, Version, serialization kind, serialization length, and terminator. The first four characters, `PPPP` indicate the protocol.  The next two characters, `vv` provide the major and minor version numbers of the Version of the protocol specification in lowercase hexadecimal notation. The first `v` provides the major version number, and the second `v` provides the minor version number. For example, `01` indicates major version 0 and minor version 1 or in dotted-decimal notation `0.1`. Likewise, `1c` indicates major version 1 and minor version decimal 12 or in dotted-decimal notation `1.12`. The next four characters, `KKKK` indicate the serialization kind in uppercase. The four supported serialization kinds are `JSON`, `CBOR`, `MGPK`, and `CESR` for the JSON, CBOR, MessagePack, and CESR serialization standards, respectively [[spec: RFC4627]] [[spec: RFC4627]] [[ref: CBOR]] [[ref: RFC8949]] [[ref: MGPK]] [[ref: CESR]]. The next six characters provide in lowercase hexadecimal notation the total length of the serialization, inclusive of the Version String and any prefixed characters or bytes. This length is the total number of characters in the serialization of the field map. The maximum length of a given field map serialization is thereby constrained to be 2<sup>24</sup> = 16,777,216 characters in length. For example, when the length of serialization is 384 decimal characters/bytes, the length part of the Version String has the value `000180`. The final character `_` is the Version String terminator. This enables later Versions of the protocol to change the total Version String size and thereby enable versioned changes to the composition of the fields in the Version String while preserving deterministic regular expression extractability of the Version String. 
-
 
 ### Self-addressing identifier (SAID)
 
@@ -1819,6 +1818,11 @@ The three nested blocks of the `a` block `legalName`, `address` and `phone` are 
 It is important to note that if this Version of the credential is the one issued to the holder and the signature over the entire credential is on the serialized data of this Version of the credential it is the only Version that can be presented.  The full SAD data of the three nested blocks would be delivered out of band from the signed credential.  The top-level schema would describe the blocks with conditional subschema for each section.  The credential signature becomes a cryptographic commitment to the contents of the overall credential as well as the content of each of the blocks and will still validate the presented credential with significantly less bandwidth.
 
 With this approach, credential presentation request and exchange protocols can be created that modify the schema with the conditional subschema, removing the conditions that allow for SAIDs in place of the required (or presented) nested blocks.  The modified schema can be used in such a protocol to indicate the required sections to be delivered out of bounds or as a commitment to provide the nested blocks after the credential presentation has occurred.
+
+### Post-Quantum Security
+Post-quantum or quantum-safe cryptography deals with techniques that maintain their cryptographic strength despite attacks from quantum computers. Because it is currently assumed that practical quantum computers do not yet exist, post-quantum techniques are forward-looking to some future time when they do exist. A one-way function that is post-quantum secure will not be any less secure (resistant to inversion) in the event that practical quantum computers suddenly or unexpectedly become available. One class of post-quantum secure one-way functions are some cryptographic strength hashes. The analysis of D.J. Bernstein with regards the collision resistance of cryptographic one-way hashing functions concludes that quantum computation provides no advantage over non-quantum techniques. Consequently, one way to provide some degree of post-quantum security is to hide cryptographic material behind digests of that material created by such hashing functions. This directly applies to the public keys declared in the pre-rotations. Instead of a pre-rotation making a cryptographic pre-commitment to a public key, it makes a pre-commitment to a digest of that public key. The digest may be verified once the public key is disclosed (unhidden) in a later rotation operation. Because the digest is the output of a one-way hash function, the digest is uniquely strongly bound to the public key. When the unexposed public keys of a pre-rotation are hidden in a digest, the associated private keys are protected from a post-quantum brute force inversion attack on those public keys.
+
+To elaborate, a post-quantum attack that may practically invert the one-way public key generation (ECC scalar multiplication) function using quantum computation must first invert the digest of the public key using non-quantum computation. Pre-quantum cryptographic strength is, therefore, not weakened post-quantum. A surprise quantum capability may no longer be a vulnerability. Strong one-way hash functions, such as 256-bit (32-byte) Blake2, Blake3, and SHA3, with 128-bits of pre-quantum strength, maintain that strength post-quantum. Furthermore, hiding the pre-rotation public keys does not impose any additional storage burden on the controller because the controller must always be able to reproduce or recover the associated private keys to sign the associated rotation operation. Hidden public keys may be compactly expressed as Base64 encoded qualified public keys digests (hidden) where the digest function is indicated in the derivation code.
 
 [//]: # (\newpage)
 
